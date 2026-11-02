@@ -288,7 +288,7 @@ export function initNms(site: Site) {
       el('rect', { class: 'box', ...rectOf(d.bbox), stroke: color, 'stroke-opacity': on ? 1 : 0.35, 'stroke-dasharray': on ? '' : '4 4' }, L.boxes);
       if (on) {
         const fs = Math.max(11, ex.width / 36);
-        el('text', { class: 'tag', x: d.bbox[0] + 3, y: d.bbox[3] - 4, 'font-size': fs, fill: '#fff', stroke: color, 'stroke-width': fs * 0.28 }, L.boxes).textContent = `${label(d.class_id)} ${d.score.toFixed(2)}`;
+        el('text', { class: 'tag', x: d.bbox[0] + 3, y: d.bbox[1] + fs + 2, 'font-size': fs, fill: '#fff', stroke: color, 'stroke-width': fs * 0.28 }, L.boxes).textContent = `${label(d.class_id)} ${d.score.toFixed(2)}`;
       }
     }
     legend.replaceChildren();
