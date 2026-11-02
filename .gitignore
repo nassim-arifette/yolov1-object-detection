@@ -12,3 +12,7 @@ colab_artifacts/
 *.tar.gz
 .env
 .env.*
+
+# built website (cd web && npm run build)
+site/
+web/node_modules/
