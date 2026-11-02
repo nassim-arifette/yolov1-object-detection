@@ -113,7 +113,7 @@ export function initCell(site: Site) {
     const p = document.createElement('p'); p.className = 'small';
     p.textContent = here.length === 0 ? 'No object centre falls here: this cell is trained to predict “no object”.'
       : here.length === 1 ? `One object centre falls here: a ${label(here[0].o.class_id)}.`
-        : `${here.length} object centres fall here: ${here.map(({ o }) => label(o.class_id)).join(', ')}. Only the first in annotation order becomes the target; the other${here.length > 2 ? 's get' : ' gets'} none.`;
+        : `${here.length} object centres fall here: ${here.map(({ o }) => label(o.class_id)).join(', ')}. Only the first in annotation order becomes the target. The other${here.length > 2 ? 's get' : ' gets'} nothing.`;
     panel.append(p);
     const add = (title: string, values: { t: string; on: boolean }[], cols = 10) => {
       const l = document.createElement('div'); l.className = 'vec-label'; l.textContent = title;
@@ -127,7 +127,7 @@ export function initCell(site: Site) {
       ...(['x', 'y', 'w', 'h'] as const).map((k) => ({ t: target ? target[k].toFixed(2) : '—', on: !!target })),
     ], 5);
     const n = document.createElement('p'); n.className = 'small';
-    n.textContent = 'The cell predicts two boxes. During training, the one whose prediction overlaps this target most becomes responsible for it; the other learns “no object”.';
+    n.textContent = 'The cell predicts two boxes. In training, whichever overlaps this target more becomes responsible for it, and the other learns “no object”.';
     panel.append(n);
   }
 

@@ -14,7 +14,7 @@
   <header class="hero" id="top">
     <div class="hero-copy">
       <h1>One object per&nbsp;cell</h1>
-      <p class="hero-sub">YOLOv1 cuts an image into a 7×7 grid and asks each cell to describe at most one object. When two objects share a cell, one of them is never taught to the network.</p>
+      <p class="hero-sub">YOLOv1 cuts an image into a 7×7 grid and asks each cell to describe at most one object. When two objects share a cell, the network is never taught about one of them.</p>
       <p class="hero-stat"><span data-stat="drop-pct">7.1 %</span> of the objects in Pascal VOC 2007 fall in a cell that is already taken.</p>
       <div class="hero-nav">
         <button type="button" class="btn ghost" data-role="prev" aria-label="Previous image">‹</button>
@@ -41,14 +41,14 @@
   <main class="article">
     <section class="tldr" aria-labelledby="tldr-h">
       <h2 id="tldr-h">In short</h2>
-      <p>This is a from-scratch reimplementation of YOLOv1 on Pascal VOC 2007, rebuilt so that every number it produces can be trusted: the loss follows the paper, evaluation reads every annotation, and train, validation and test are kept apart.</p>
-      <p>It asks two questions. How much does the one-object-per-cell grid cost? On VOC 2007, <strong data-stat="dropped">1,745</strong> of <strong data-stat="objects">24,640</strong> objects cannot become a training target, up to <strong data-stat="worst">15.8 %</strong> for bottles. And does it matter what the confidence score learns, the box’s IoU as in the paper or a constant one? <strong>That experiment is running</strong>; no new mAP is reported on this page yet.</p>
+      <p>This is a from-scratch reimplementation of YOLOv1 on Pascal VOC 2007, rebuilt so that its numbers can be trusted. The loss follows the paper, evaluation reads every annotation, and train, validation and test never mix.</p>
+      <p>I wanted to answer two questions. First, how much does the one-object-per-cell grid cost? On VOC 2007, <strong data-stat="dropped">1,745</strong> of <strong data-stat="objects">24,640</strong> objects cannot become a training target, and for bottles the share reaches <strong data-stat="worst">15.8 %</strong>. Second, does it matter whether the confidence score learns the box’s IoU, as in the paper, or a constant one? <strong>That experiment is running</strong>, so this page reports no new mAP yet.</p>
     </section>
 
     <section aria-labelledby="s1">
       <h2 id="s1">What a cell has to say</h2>
       <p>YOLOv1 reads a 448×448 image once and outputs a 7×7×30 tensor. Each of the 49 cells gives 20 class probabilities and two candidate boxes, each box a centre (relative to the cell), a width and height (relative to the image) and a confidence <a class="cite" href="#ref-yolo">[1]</a>.</p>
-      <p>During training, an object is assigned to the one cell that contains its centre. That cell alone learns to find it. Hover a cell to see the target it receives.</p>
+      <p>During training, each object goes to the cell that contains its centre, and only that cell learns to find it. Hover a cell to see the target it receives.</p>
     </section>
 
     <figure class="fig wide" id="fig-cell">
@@ -57,13 +57,13 @@
         <div class="panel" data-role="panel"></div>
       </div>
       <div class="controls"><label class="ctl">Image <select data-ctl="image"></select></label></div>
-      <figcaption><span class="fig-n">Figure 1.</span> Real VOC 2007 test annotations, encoded with the training target code of this repository. The first object in annotation order takes the cell; the others get no target, although evaluation still counts them.</figcaption>
+      <figcaption><span class="fig-n">Figure 1.</span> Real VOC 2007 test annotations, encoded with the training target code of this repository. The first object in annotation order takes the cell. The others get no target, but evaluation still counts them.</figcaption>
     </figure>
 
     <section aria-labelledby="s2">
       <h2 id="s2">The grid’s blind spot, measured</h2>
-      <p>The paper names this limitation itself: the model struggles with small objects that appear in groups. The encoder makes it countable. Over the official train, validation and test lists, <span data-stat="images">1,141 of 9,963 images</span> contain at least one object that loses its cell.</p>
-      <p>The cost is not shared evenly. Objects that come in clusters, like bottles, people and chairs, lose far more often than trains or cats, which tend to be alone and large.</p>
+      <p>The paper admits this limitation: the model struggles with small objects that appear in groups. With the encoder, it can be counted. Over the official train, validation and test lists, <span data-stat="images">1,141 of 9,963 images</span> contain at least one object that loses its cell.</p>
+      <p>Some classes are hit much harder than others. Bottles, people and chairs come in clusters and lose their cell far more often than trains or cats, which tend to be large and alone.</p>
     </section>
 
     <figure class="fig wide" id="fig-audit">
@@ -78,13 +78,13 @@
           </div>
         </div>
       </div>
-      <figcaption><span class="fig-n">Figure 2.</span> Share of non-difficult objects that receive no training target, per class, from the repository’s grid audit of every VOC 2007 annotation. This is not a hard recall ceiling: a cell has two boxes, and at test time both may still land on different objects.</figcaption>
+      <figcaption><span class="fig-n">Figure 2.</span> Share of non-difficult objects that receive no training target, per class, from the repository’s grid audit of every VOC 2007 annotation. It is not a hard recall ceiling, because a cell has two boxes and at test time they can still land on different objects.</figcaption>
     </figure>
 
     <section aria-labelledby="s3">
       <h2 id="s3">What should confidence learn?</h2>
-      <p>Each box also predicts a confidence. The paper defines its target as the IoU between the predicted box and the object it is responsible for, so a sloppy box should learn to be unsure. A simpler alternative trains it towards 1 wherever there is an object; the experiment keeps it as a control.</p>
-      <p>The difference matters at test time. A detection is ranked by its class probability times its confidence, and average precision rewards ranking good boxes above bad ones. Drag the box and compare the two targets.</p>
+      <p>Each box also predicts a confidence. In the paper, its target is the IoU between the predicted box and the object it is responsible for, so a sloppy box should learn to be unsure. A simpler alternative trains it towards 1 wherever there is an object. The experiment keeps that one as a control.</p>
+      <p>This shows up at test time. Detections are ranked by class probability times confidence, and average precision rewards putting good boxes above bad ones. Drag the box and compare the two targets.</p>
     </section>
 
     <figure class="fig wide" id="fig-conf">
@@ -103,7 +103,7 @@
 
     <section aria-labelledby="s4">
       <h2 id="s4">Cleaning up: non-maximum suppression</h2>
-      <p>With two boxes in each of 49 cells, several cells often fire on the same object. Non-maximum suppression keeps the highest-scoring box and removes the others that overlap it by more than a threshold. It runs per class, so a rider never suppresses her horse.</p>
+      <p>With two boxes in each of 49 cells, it is common for several cells to fire on the same object. Non-maximum suppression keeps the highest-scoring box and removes any other box that overlaps it by more than a threshold. Because it runs per class, a rider never suppresses her horse.</p>
     </section>
 
     <figure class="fig wide" id="fig-nms">
@@ -114,34 +114,34 @@
         </label>
         <div class="legend" data-role="legend"></div>
       </div>
-      <figcaption><span class="fig-n">Figure 4.</span> The candidates are illustrative, jittered around the real annotations; they are not model outputs. Suppression uses the same class-specific rule as the evaluation code. The evaluation threshold is 0.5, tuned on validation only.</figcaption>
+      <figcaption><span class="fig-n">Figure 4.</span> The candidates are not model outputs. They are illustrative boxes, jittered around the real annotations. Suppression follows the same class-specific rule as the evaluation code, which uses a threshold of 0.5 tuned on validation only.</figcaption>
     </figure>
 
     <section aria-labelledby="s5">
       <h2 id="s5">The experiment</h2>
-      <p>The protocol was frozen before training. Four conditions share everything, architecture, optimiser, schedule, image order, except the confidence target and the augmentation. Each runs with three seeds.</p>
+      <p>I froze the protocol before training. The four conditions differ only in the confidence target and the augmentation; architecture, optimiser, schedule and image order are the same. Each one runs with three seeds.</p>
       <div class="cond" role="table" aria-label="The four training conditions">
         <div role="row" class="cond-h"><span role="columnheader"></span><span role="columnheader">Confidence target: 1</span><span role="columnheader">Confidence target: IoU</span></div>
         <div role="row"><span role="rowheader">No augmentation</span><span role="cell"><b>A</b> pending</span><span role="cell"><b>B</b> pending</span></div>
         <div role="row"><span role="rowheader">Flips and colour changes</span><span role="cell"><b>C</b> pending</span><span role="cell"><b>D</b> pending</span></div>
       </div>
-      <p>The effects of interest are B − A and D − C for the confidence target, C − A and D − B for augmentation, each reported with its seeds, zero or negative included. Checkpoints are chosen on validation mAP; the test set is evaluated once, with VOC 2007’s 11-point interpolated AP at IoU 0.5 <a class="cite" href="#ref-voc">[2]</a>.</p>
-      <p class="status"><b>Status: training.</b> Results will be added here with their per-class AP, seeds, selected checkpoints and raw detections.</p>
+      <p>The confidence target effect is read from B − A and D − C, the augmentation effect from C − A and D − B. Each is reported with its seeds, even if it comes out zero or negative. Checkpoints are picked on validation mAP, and the test set is evaluated once, with VOC 2007’s 11-point interpolated AP at IoU 0.5 <a class="cite" href="#ref-voc">[2]</a>.</p>
+      <p class="status"><b>Status: training.</b> Results will go here, along with per-class AP, seeds, selected checkpoints and raw detections.</p>
     </section>
 
     <section aria-labelledby="s6">
       <h2 id="s6">What this does not claim</h2>
       <ul class="limits">
-        <li><strong>It is not an exact reproduction of the paper.</strong> The network trains from scratch with BatchNorm and a 496-unit head instead of ImageNet pretraining and a 4,096-unit head. The published 63.4 mAP is not the target.</li>
-        <li><strong>The “1” condition is a deliberate control,</strong> not a faithful baseline. All conditions use the corrected loss, masks and coordinate units.</li>
-        <li><strong>The grid audit is not an AP loss.</strong> Measuring that requires evaluating the trained model on a defined subset.</li>
-        <li><strong>No speed comparison with newer YOLO versions is made.</strong> That would need shared images, hardware and preprocessing.</li>
+        <li>This is not an exact reproduction of the paper. The network trains from scratch with BatchNorm and a 496-unit head, where the paper used ImageNet pretraining and a 4,096-unit head, so the published 63.4 mAP is not the target.</li>
+        <li>The “1” condition is a deliberate control, not a faithful baseline. All conditions use the corrected loss, masks and coordinate units.</li>
+        <li>The grid audit does not measure an AP loss. That would require evaluating the trained model on a defined subset.</li>
+        <li>There is no speed comparison with newer YOLO versions. A fair one would need the same images, hardware and preprocessing.</li>
       </ul>
     </section>
 
     <section aria-labelledby="s7">
       <h2 id="s7">The original course project</h2>
-      <p>The first version of this project trained a YOLOv1 and compared it with newer YOLO releases on videos. Its curves are kept below as training diagnostics. They come from code with several bugs since fixed, measure training data, and cannot say anything about generalisation.</p>
+      <p>The first version of this project trained a YOLOv1 and compared it with newer YOLO releases on videos. Its curves are kept below as training diagnostics. They were produced by code that had several bugs, since fixed, and they are measured on training data, so they say nothing about generalisation.</p>
       <div class="history">
         <figure><img src="files/mean_loss_plot.png" alt="Historical training loss curve" loading="lazy" /><figcaption>Historical training loss.</figcaption></figure>
         <figure><img src="files/train_map_plot.png" alt="Historical training mAP curve" loading="lazy" /><figcaption>Historical mAP on training images.</figcaption></figure>
@@ -150,7 +150,7 @@
 
     <section aria-labelledby="reproduce" class="reproduce">
       <h2 id="reproduce">Run it yourself</h2>
-      <p>Everything below except training runs on a CPU. The download verifies the official archives by MD5 and SHA-256 and writes the grid audit shown in Figure 2.</p>
+      <p>Everything below runs on a CPU except training. The download script checks the official archives against MD5 and SHA-256 hashes, then writes the grid audit shown in Figure 2.</p>
 <pre><code>python -m pip install -r requirements-test.txt
 python -m pytest tests -q
 python download_voc.py --data-dir data
@@ -174,7 +174,7 @@ python evaluate.py --checkpoint outputs/iou_aug_seed123/best.pt --manifest data/
   </main>
 
   <footer class="foot">
-    <p>Images and annotations from the PASCAL VOC 2007 test set. The grid encoder, IoU and NMS shown here are TypeScript ports of the repository’s Python code, tested to drop exactly the same objects on all 4,952 test images.</p>
+    <p>Images and annotations from the PASCAL VOC 2007 test set. The grid encoder, IoU and NMS shown here are TypeScript ports of the repository’s Python code. Tests check that they drop exactly the same objects on all 4,952 test images.</p>
   </footer>
 
   <script type="module" src="/src/main.ts"></script>

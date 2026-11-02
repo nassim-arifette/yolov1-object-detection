@@ -1,6 +1,6 @@
 # One object per cell
 
-**A from-scratch YOLOv1 on Pascal VOC 2007, rebuilt so its numbers can be trusted: what the 7×7 grid costs, and what the confidence score should learn.**
+A from-scratch YOLOv1 on Pascal VOC 2007, rebuilt so its numbers can be trusted. It looks at what the 7×7 grid costs and at what the confidence score should learn.
 
 [**Open the interactive article →**](https://nassim-arifette.github.io/yolov1-object-detection/)
 
@@ -8,9 +8,15 @@
 
 ## What it measures
 
-**The grid's blind spot.** YOLOv1 assigns each object to the one cell that contains its centre, and each cell describes at most one object. Over the official VOC 2007 train, validation and test lists, **1,745 of 24,640 non-difficult objects (7.1 %) land in a cell that is already taken** and never become a training target. 1,141 of 9,963 images are affected. The cost depends on the class: 15.8 % of bottles and 11.0 % of people, against 0.1 % of cats and no train at all. This audit runs on the annotations only; it is not an AP loss, and not a hard recall ceiling.
+### The grid's blind spot
 
-**What confidence should learn.** The paper trains each box's confidence towards its IoU with the object; a simpler control trains it towards 1. A frozen 2×2 protocol (confidence target × augmentation, three seeds each) compares them under identical conditions. **That training is in progress; no new mAP is reported yet.**
+YOLOv1 assigns each object to the cell that contains its centre, and a cell describes at most one object. If a second object lands in a cell that is already taken, it never becomes a training target. Over the official VOC 2007 train, validation and test lists, that happens to 1,745 of 24,640 non-difficult objects (7.1 %), in 1,141 of 9,963 images.
+
+Some classes pay much more than others. 15.8 % of bottles and 11.0 % of people lose their cell, against 0.1 % of cats and not a single train. The audit only reads the annotations. It is not an AP loss, and it is not a hard recall ceiling either.
+
+### What confidence should learn
+
+In the paper, each box's confidence is trained towards its IoU with the object. A simpler control trains it towards 1. I compare the two with a frozen 2×2 protocol (confidence target × augmentation, three seeds each), everything else held equal. **Training is still in progress, and no new mAP is reported yet.**
 
 | Condition | Confidence target | Augmentation |
 |---|---|---|
@@ -19,7 +25,7 @@
 | C | constant 1 | horizontal flip and colour changes |
 | D | detached responsible-box IoU | horizontal flip and colour changes |
 
-Effects of interest: B − A and D − C for the target, C − A and D − B for augmentation, all reported with seeds, including zero or negative ones. Full protocol: [`docs/EXPERIMENT_PROTOCOL.md`](docs/EXPERIMENT_PROTOCOL.md).
+The target effect is read from B − A and D − C, the augmentation effect from C − A and D − B. Every effect is reported with its seeds, even when it is zero or negative. The full protocol is in [`docs/EXPERIMENT_PROTOCOL.md`](docs/EXPERIMENT_PROTOCOL.md).
 
 ## What you can do on the site
 
@@ -30,17 +36,17 @@ Effects of interest: B − A and D − C for the target, C − A and D − B for
 | What confidence should learn | Drag a predicted box against a real annotation and compare the two confidence targets. |
 | Non-maximum suppression | Move the threshold and watch class-specific suppression. |
 
-The grid encoder, IoU and NMS on the site are TypeScript ports of this repository's Python code, tested to drop exactly the same objects on all 4,952 test images.
+The grid encoder, IoU and NMS on the site are TypeScript ports of the Python code in this repository. Tests check that they drop exactly the same objects on all 4,952 test images.
 
 ## What was fixed in the implementation
 
-- **Confidence** learns the responsible box's detached IoU; the responsible box is chosen by IoU and every other predictor gets the no-object penalty. A constant target is available as a controlled ablation.
-- **Coordinates** follow the paper: centre offsets in the cell, width and height in image units.
-- **Inference** keeps both boxes, ranks detections by class score × confidence, and applies class-specific NMS.
-- **Evaluation** reads every XML object, including those the training encoder drops, ignores difficult objects as VOC does, counts duplicates as false positives, and uses VOC 2007's 11-point interpolated AP.
-- **Data** keeps train, validation and test apart: training on `train`, checkpoints chosen on `val`, `test` evaluated once. Manifests, hashes, settings, per-class AP and resumable checkpoints are saved.
+- Confidence now learns the detached IoU of the responsible box. That box is the predictor with the higher IoU; every other predictor gets the no-object penalty. A constant target is still available as a controlled ablation.
+- Coordinates follow the paper, with centre offsets inside the cell and width and height in image units.
+- At inference both boxes are kept. Detections are ranked by class score × confidence, then filtered with class-specific NMS.
+- Evaluation reads every XML object, including the ones the training encoder drops. Difficult objects are ignored as in VOC, duplicates count as false positives, and AP is VOC 2007's 11-point interpolated version.
+- Train, validation and test stay separate: the model trains on `train`, checkpoints are picked on `val`, and `test` is evaluated once. Manifests, hashes, settings, per-class AP and resumable checkpoints are all saved.
 
-The network trains from scratch with BatchNorm and a 496-unit head instead of ImageNet pretraining and a 4,096-unit head. This is a resource-constrained study, **not an exact reproduction of the paper's published mAP**.
+The network trains from scratch with BatchNorm and a 496-unit head, where the paper used ImageNet pretraining and a 4,096-unit head. This is a study on a limited compute budget, **not an exact reproduction of the paper's published mAP**.
 
 ## Run it
 
@@ -53,7 +59,7 @@ python train.py --voc-root data/VOCdevkit --out outputs/iou_aug_seed123
 python evaluate.py --checkpoint outputs/iou_aug_seed123/best.pt --manifest data/manifests/test.json --voc-root data/VOCdevkit --out outputs/iou_aug_seed123_test
 ```
 
-Training needs a CUDA build of PyTorch. See [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md) for Colab, a one-epoch pipeline check and exact resumption, and [`docs/LITERATURE.md`](docs/LITERATURE.md) for what the paper and the authors' code actually specify.
+Training needs a CUDA build of PyTorch. [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md) covers Colab, a one-epoch pipeline check and exact resumption. [`docs/LITERATURE.md`](docs/LITERATURE.md) lists what the paper and the authors' code actually specify.
 
 ## Repository layout
 
@@ -67,10 +73,10 @@ Training needs a CUDA build of PyTorch. See [`docs/REPRODUCIBILITY.md`](docs/REP
 | `gpu_smoke.py`, `tests/` | Synthetic execution check and invariants |
 | `web/` | Source of the website (Vite + TypeScript, D3). See [`docs/SITE.md`](docs/SITE.md) |
 
-No dataset, model weights or credentials are included.
+The repository contains no dataset, model weights or credentials.
 
 ## Historical material
 
-The [poster](Poster_YoloV1.png), [report](yolo.pdf) and [figures](figures/) of the original course project are kept as artifacts. Their curves are training diagnostics from code that has since been fixed; they say nothing about generalisation. The comparison videos with newer YOLO versions are qualitative only, so the earlier claim that YOLOv3 was the best model has been removed.
+The [poster](Poster_YoloV1.png), [report](yolo.pdf) and [figures](figures/) from the original course project are kept for the record. Their curves are training diagnostics, produced by code that has since been fixed, and they say nothing about generalisation. The videos comparing it with newer YOLO versions are only qualitative, so I removed the earlier claim that YOLOv3 was the best model.
 
 Nassim Arifette, PhD student at École polytechnique. Master MVA, ENS Paris-Saclay.
