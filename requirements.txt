@@ -1,0 +1,4 @@
+# Dependency ranges, not a reconstruction of the historical environment.
+numpy>=1.24,<3
+Pillow>=10,<13
+torch>=2.4,<3

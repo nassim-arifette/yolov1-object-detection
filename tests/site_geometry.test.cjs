@@ -1,0 +1,13 @@
+const assert = require("node:assert/strict");
+const {iou, cell, suppressed} = require("../site/app.js");
+const a = {x:0,y:0,w:10,h:10};
+assert.equal(iou(a,a),1);
+assert.equal(iou(a,{...a,x:20}),0);
+assert.equal(iou(a,{...a,x:5}),1/3);
+assert.deepEqual(cell(.5,.5),[3,3]);
+assert.deepEqual(cell(.54,.52),[3,3]);
+assert.deepEqual(cell(.58,.52),[3,4]);
+assert.equal(suppressed(a,a,.5),true);
+assert.equal(suppressed(a,a,.5,true),false);
+assert.equal(suppressed(a,{...a,x:5},1/3),false);
+console.log("9 synthetic geometry assertions passed.");
